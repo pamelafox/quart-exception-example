@@ -1,7 +1,7 @@
 import json
 import asyncio
 
-from quart import Blueprint, Response, current_app, render_template, request, stream_with_context
+from quart import Blueprint, Response, current_app, render_template, request, stream_with_context, make_response, jsonify
 
 bp = Blueprint("chat", __name__, template_folder="templates", static_folder="static")
 
@@ -20,10 +20,10 @@ async def chat_coroutine():
 async def chat_handler():
 
     async def response_stream():
-        try:
-            async for event in chat_coroutine():
-                yield json.dumps(event, ensure_ascii=False) + "\n"
-        except Exception:
-            yield json.dumps({"choices": [{"delta": {"content": "dont divide by zero"}}]})
+        async for event in chat_coroutine():
+            yield json.dumps(event, ensure_ascii=False) + "\n"
 
-    return Response(response_stream())
+    try:
+        return Response(response_stream())
+    except Exception as e:
+        return jsonify({"choices": [{"delta": {"content": str(e)}}]})
